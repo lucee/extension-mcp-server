@@ -1,0 +1,235 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.lucee</groupId>
+    <artifactId>mcp-server-extension</artifactId>
+    <version>1.0.0.3-ALPHA</version>
+    <packaging>pom</packaging>
+    <name>MCP Server Extension</name>
+    <description>A Model Context Protocol (MCP) server for Lucee, written entirely in CFML with no external dependencies. Exposes Lucee built-in functions and tags as tools for AI models such as Claude. Can also serve as a starting point for building custom MCP servers in CFML.</description>
+    <url>https://github.com/lucee/extension-mcp-server</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <id>B5059590-2112-49FB-AEDFB997252EDA18</id>
+        <label>MCP Server</label>
+        <luceeCoreVersion>7.0.0.110</luceeCoreVersion>
+        <manifest.description>MCP server for Lucee written in CFML: exposes built-in functions and tags as AI tools. Use as-is or as a starting point for custom MCP servers.</manifest.description>
+        <release.url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</release.url>
+        <snapshot.url>https://oss.sonatype.org/content/repositories/snapshots/</snapshot.url>
+    </properties>
+
+    <scm>
+        <url>https://github.com/lucee/extension-mcp-server</url>
+        <connection>scm:git:git://github.com/lucee/extension-mcp-server.git</connection>
+        <developerConnection>scm:git:git@github.com:lucee/extension-mcp-server.git</developerConnection>
+        <tag>${project.version}</tag>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>The GNU Lesser General Public License, Version 2.1</name>
+            <url>http://www.gnu.org/licenses/lgpl-2.1.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>micstriit</id>
+            <name>Michael Offner</name>
+            <email>michael@lucee.org</email>
+            <organization>Lucee Association Switzerland</organization>
+            <organizationUrl>http://lucee.org</organizationUrl>
+            <roles>
+                <role>Project-Administrator</role>
+                <role>Developer</role>
+            </roles>
+            <timezone>+1</timezone>
+        </developer>
+    </developers>
+
+    <profiles>
+        <profile>
+            <id>release-sign-artifacts</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <files>
+                                        <file>${project.build.directory}/${project.artifactId}-${project.version}.lex</file>
+                                    </files>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <configuration>
+                            <autoVersionSubmodules>true</autoVersionSubmodules>
+                            <useReleaseProfile>false</useReleaseProfile>
+                            <releaseProfiles>release</releaseProfiles>
+                            <goals>deploy</goals>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <!-- Phase 1: prepare all files -->
+                    <execution>
+                        <id>build-lex</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <tstamp>
+                                    <format property="NOW" pattern="yyyy-MM-dd HH:mm:ss"/>
+                                </tstamp>
+
+                                <delete dir="${project.build.directory}/extension"/>
+                                <mkdir  dir="${project.build.directory}/extension/META-INF"/>
+                                <mkdir  dir="${project.build.directory}/extension/components/org/lucee/extension/mcp"/>
+
+                                <echo file="${project.build.directory}/extension/META-INF/MANIFEST.MF">Manifest-Version: 1.0
+Built-Date: ${NOW}
+version: "${project.version}"
+id: "${id}"
+groupId: "${project.groupId}"
+artifactId: "${project.artifactId}"
+name: "${label}"
+description: "${manifest.description}"
+lucee-core-version: "${luceeCoreVersion}"
+start-bundles: false
+
+</echo>
+
+                                <copy todir="${project.build.directory}/extension/components/org/lucee/extension/mcp">
+                                    <fileset dir="${basedir}/source/components/org/lucee/extension/mcp"/>
+                                </copy>
+                                <copy todir="${project.build.directory}/extension/context">
+                                    <fileset dir="${basedir}/source/context"/>
+                                </copy>
+                                <copy
+                                    file="${basedir}/README.md"
+                                    todir="${project.build.directory}/extension/META-INF"/>
+                                <copy
+                                    file="${basedir}/source/images/logo.png"
+                                    todir="${project.build.directory}/extension/META-INF"/>
+                            </target>
+                        </configuration>
+                    </execution>
+
+                    <!-- Phase 2: zip into .lex -->
+                    <execution>
+                        <id>package-lex</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}.lex"
+                                     basedir="${project.build.directory}/extension"
+                                     compress="true"
+                                     encoding="UTF-8"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Attach the .lex file as a deployable artifact -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>${project.build.directory}/${project.artifactId}-${project.version}.lex</file>
+                                    <type>lex</type>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Deploy the .lex file to Maven repository -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.0.0-M1</version>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.build.directory}/${project.artifactId}-${project.version}.lex</file>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <version>${project.version}</version>
+                            <repositoryId>ossrh</repositoryId>
+                            <url>${deploy.url}</url>
+                            <packaging>lex</packaging>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Sonatype Central publishing -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.8.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>ossrh</publishingServerId>
+                    <autoPublish>true</autoPublish>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
