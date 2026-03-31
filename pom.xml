@@ -5,7 +5,7 @@
 
     <groupId>org.lucee</groupId>
     <artifactId>mcp-server-extension</artifactId>
-    <version>1.0.0.7-BETA</version>
+    <version>1.0.0.8-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>MCP Server Extension</name>
     <description>A Model Context Protocol (MCP) server for Lucee, written entirely in CFML with no external dependencies. Exposes Lucee built-in functions and tags as tools for AI models such as Claude. Can also serve as a starting point for building custom MCP servers in CFML.</description>
