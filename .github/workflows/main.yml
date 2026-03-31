@@ -87,6 +87,7 @@ jobs:
           luceeVersion: ${{ matrix.lucee.version }}
           luceeVersionQuery: ${{ matrix.lucee.query }}
           extensionDir: ${{ github.workspace }}/target
+          extensions: EFDEB172-F52E-4D84-9CD1A1F561B3DFC8;name=Lucene;version=3.0.0.163
         env:
           testLabels: mcpserver
           testAdditional: ${{ github.workspace }}/tests
