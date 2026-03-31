@@ -76,7 +76,6 @@ component extends="MCPSupport" {
 			}
 		}
 		catch ( any ex ) {
-			systemOutput( ex, 1, 1 );
 			writeError( id: id, code: -32603, message: "Internal error: #ex.message#" );
 		}
 	}
