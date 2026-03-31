@@ -1,4 +1,4 @@
-name: Yaml Extension CI
+name: MCP Server Extension CI
 
 on: [push, pull_request, workflow_dispatch]
 
