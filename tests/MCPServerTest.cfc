@@ -33,7 +33,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 			method   : "POST",
 			headers  : { "Content-Type": "application/json" },
 			body     : serializeJSON( arguments.body ),
-			throwonerror: false
+			throwonerror: true
 		);
 		return deserializeJSON( res.filecontent );
 	}
