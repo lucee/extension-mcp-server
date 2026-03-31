@@ -21,6 +21,44 @@ Beyond its use as a Lucee documentation tool, this extension is designed to serv
 | `get_lucee_function` | Returns the full descriptor for a named Lucee built-in function — arguments, types, defaults, and docs URL |
 | `get_lucee_tag` | Returns the full descriptor for a named Lucee tag — attributes, types, defaults, and docs URL |
 
+### Adding Your Own Tools
+
+Tools are loaded dynamically from the `tools/` folder. There are two places to add a tool depending on your use case:
+
+**On a running Lucee instance** — drop the component here, no build step needed:
+```
+<instance>/lucee-server/context/components/org/lucee/extension/mcp/tools/
+```
+
+**When extending the extension itself** — add it to the source and rebuild with `mvn package`:
+```
+source/components/org/lucee/extension/mcp/tools/
+```
+
+In both cases Lucee picks it up on next restart (tools are cached at startup).
+
+```javascript
+component extends="Tool" {
+
+    variables.name        = "my_tool";
+    variables.description = "What this tool does — shown to the AI model.";
+    variables.inputSchema = {
+        "type"      : "object",
+        "properties": {
+            "query": { "type": "string", "description": "The input" }
+        },
+        "required": [ "query" ]
+    };
+
+    public function exec( required struct args ) {
+        // your logic here
+        return toTextContent( "result text" );
+    }
+}
+```
+
+`toTextContent()` is a helper defined on the base `Tool` component that wraps a string into the MCP content array format the protocol expects.
+
 ## Installation
 
 Install via the Lucee Administrator or by dropping the `.lex` file into the deploy directory:
@@ -205,8 +243,13 @@ The server uses standard JSON-RPC 2.0 error codes:
 ```
 source/
   components/org/lucee/extension/mcp/
-    MCPServer.cfc      ← JSON-RPC dispatch + tool implementations
+    MCPServer.cfc      ← JSON-RPC dispatch, loads tools dynamically
     MCPSupport.cfc     ← request reading, response writing, error formatting
+    Tool.cfc           ← abstract base class for all tools
+    tools/
+      GetLuceeFunction.cfc   ← get_lucee_function tool
+      GetLuceeTag.cfc        ← get_lucee_tag tool
+      (add your own here)
   context/
     lucee/mcp/
       index.cfm        ← entry point, accessible at /lucee/mcp/
