@@ -19,25 +19,22 @@
 component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 
 	function beforeAll() {
-		// The Lucee test runner starts a local server - read the port it exposes
-		variables.baseURL = "http://localhost:" & server.system.environment.LUCEE_TEST_PORT & "/lucee/mcp/";
 	}
 
 	function afterAll() {
 	}
 
 	// -------------------------------------------------------------------------
-	// Helper: POST JSON-RPC request, return parsed response struct
+	// Helper: POST JSON-RPC request internally, return parsed response struct
 	// -------------------------------------------------------------------------
 	private function post( required struct body ) {
-		cfhttp(
-			url    = variables.baseURL,
-			method = "POST",
-			result = "local.res"
-		) {
-			cfhttpparam( type="header", name="Content-Type", value="application/json" );
-			cfhttpparam( type="body",   value=serializeJSON( arguments.body ) );
-		}
+		var res = internalRequest(
+			template : "/lucee/mcp/index.cfm",
+			method   : "POST",
+			headers  : { "Content-Type": "application/json" },
+			body     : serializeJSON( arguments.body ),
+			throwonerror: false
+		);
 		return deserializeJSON( res.filecontent );
 	}
 
@@ -200,15 +197,18 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 		describe( "JSON-RPC protocol errors", function() {
 
 			it( "GET request returns error -32600", function() {
-				cfhttp( url=variables.baseURL, method="GET", result="local.res" );
+				var res = internalRequest( template: "/lucee/mcp/index.cfm", method: "GET", throwonerror: false );
 				var body = deserializeJSON( res.filecontent );
 				expect( body.error.code ).toBe( -32600 );
 			});
 
 			it( "empty POST body returns error -32700", function() {
-				cfhttp( url=variables.baseURL, method="POST", result="local.res" ) {
-					cfhttpparam( type="header", name="Content-Type", value="application/json" );
-				}
+				var res = internalRequest(
+					template     : "/lucee/mcp/index.cfm",
+					method       : "POST",
+					headers      : { "Content-Type": "application/json" },
+					throwonerror : false
+				);
 				var body = deserializeJSON( res.filecontent );
 				expect( body.error.code ).toBe( -32700 );
 			});
