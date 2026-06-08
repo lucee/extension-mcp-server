@@ -74,13 +74,8 @@ component extends="Tool" {
 		var output = [];
 		loop query=results {
 			var passages = [];
-			loop query=results.context.passages {
-				arrayAppend( passages, {
-					"start": results.context.passages.start,
-					"end"  : results.context.passages.end,
-					"score": results.context.passages.score,
-					"data" : results.context.passages.original
-				});
+			if ( listFindNoCase( results.columnList, "context" ) && len( trim( toString( results.context ) ) ) ) {
+				arrayAppend( passages, { "data": toString( results.context ) } );
 			}
 
 			var src = results.custom2;
@@ -113,19 +108,19 @@ component extends="Tool" {
 
 		// Load all data sources
 		var sources = [
-			{ "name": "function", "data": getFunctionIndexData() },
-			{ "name": "tag",      "data": getTagIndexData() },
-			{ "name": "recipe",   "data": getRecipeIndexData() }
+			getFunctionIndexData(),
+			getTagIndexData(),
+			getRecipeIndexData()
 		];
 
 		cfindex( action="list", name="local.existing", collection=static.COLLECTION_NAME );
 
 		loop array=sources item="local.src" {
-			var hash = "hash:#src.hash#";
+			var indexHash = "hash:#src['hash']#";
 			var alreadyIndexed = false;
 
 			loop query=existing {
-				if ( existing.custom4 == hash ) {
+				if ( existing.custom4 == indexHash ) {
 					alreadyIndexed = true;
 					break;
 				}
@@ -141,7 +136,7 @@ component extends="Tool" {
 					body       = src.bodyColumns
 					custom1    = "keywords"
 					custom2    = "url"
-					custom4    = hash
+					custom4    = indexHash
 					query      = src.name
 				);
 			}
@@ -252,10 +247,10 @@ documentation: https://docs.lucee.org/reference/tags/#tagName#.html
 		var qry   = queryNew( [ "title", "content", "url", "keywords" ] );
 
 		loop array=index item="local.entry" {
-			var url     = rootPath & entry.path;
-			var content = "";
+			var recipeUrl = rootPath & entry.path;
+			var content   = "";
 
-			http url=url timeout=10 result="local.recipeRes";
+			http url=recipeUrl timeout=10 result="local.recipeRes";
 			if ( recipeRes.status_code >= 200 && recipeRes.status_code < 300 ) {
 				// strip front matter comment block
 				var raw      = recipeRes.filecontent;
@@ -265,7 +260,7 @@ documentation: https://docs.lucee.org/reference/tags/#tagName#.html
 
 			if ( !isEmpty( content ) ) {
 				var row = queryAddRow( qry );
-				var src = replace( url,
+				var src = replace( recipeUrl,
 					"https://raw.githubusercontent.com/lucee/lucee-docs/master/",
 					"https://github.com/lucee/lucee-docs/blob/master/",
 					"one"
