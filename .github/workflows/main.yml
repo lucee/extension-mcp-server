@@ -87,7 +87,7 @@ jobs:
           luceeVersion: ${{ matrix.lucee.version }}
           luceeVersionQuery: ${{ matrix.lucee.query }}
           extensionDir: ${{ github.workspace }}/target
-          extensions: EFDEB172-F52E-4D84-9CD1A1F561B3DFC8;name=Lucene;version=3.0.0.163
+          extensions: EFDEB172-F52E-4D84-9CD1A1F561B3DFC8
         env:
           testLabels: mcpserver
           testAdditional: ${{ github.workspace }}/tests
@@ -133,12 +133,16 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          if [[ "${{ needs.setup.outputs.version }}" == *-SNAPSHOT ]]; then
+          VERSION="${{ needs.setup.outputs.version }}"
+          if [[ "$VERSION" == *-SNAPSHOT ]]; then
             echo "------- Maven Deploy snapshot -------"
             mvn -B -e -f pom.xml clean deploy --settings maven-settings.xml
-          elif [[ "${{ needs.setup.outputs.version }}" == *-ALPHA ]]; then
+          elif [[ "$VERSION" == *-ALPHA ]]; then
             echo "------- Maven Install alpha -------"
             mvn -B -e -f pom.xml clean install --settings maven-settings.xml
+          elif [[ "$VERSION" == *-RC ]] || [[ "$VERSION" == *-BETA ]]; then
+            echo "------- Maven Deploy pre-release ($VERSION) -------"
+            mvn -B -e -f pom.xml clean deploy -DperformRelease=true --settings maven-settings.xml
           else
             echo "------- Maven Deploy release -------"
             mvn -B -e -f pom.xml clean deploy -DperformRelease=true --settings maven-settings.xml

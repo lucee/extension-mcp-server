@@ -146,7 +146,19 @@ start-bundles: false
                                 <copy
                                     file="${basedir}/source/images/logo.png"
                                     todir="${project.build.directory}/extension/META-INF"/>
+
+                                <condition property="isSnapshot" value="true" else="false">
+                                    <matches string="${project.version}" pattern=".*-SNAPSHOT"/>
+                                </condition>
+                                <condition property="deploy.url" value="${snapshot.url}">
+                                    <istrue value="${isSnapshot}"/>
+                                </condition>
+                                <condition property="deploy.url" value="${release.url}">
+                                    <isfalse value="${isSnapshot}"/>
+                                </condition>
+                                <echo message="Deploying to URL: ${deploy.url}" />
                             </target>
+                            <exportAntProperties>true</exportAntProperties>
                         </configuration>
                     </execution>
 
