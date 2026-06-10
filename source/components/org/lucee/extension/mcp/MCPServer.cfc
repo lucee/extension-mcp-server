@@ -2,9 +2,8 @@
  * Lucee Documentation MCP Server
  *
  * Implements the Model Context Protocol (MCP) over HTTP/JSON-RPC 2.0.
- * Exposes Lucee functions, tags and recipes as searchable tools so that
- * AI models (Claude, etc.) can retrieve accurate, up-to-date documentation
- * without hallucinating API details.
+ * Exposes Lucee functions and tags as tools so that AI models (Claude, etc.)
+ * can retrieve accurate, up-to-date documentation without hallucinating API details.
  *
  * Endpoint : POST /mcp/
  * Methods  : tools/list, tools/call

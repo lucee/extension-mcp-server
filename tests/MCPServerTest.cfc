@@ -83,9 +83,9 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 				expect( isArray( rsp.result.tools ) ).toBeTrue();
 			});
 
-			it( "returns exactly 5 tools", function() {
+			it( "returns exactly 4 tools", function() {
 				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
-				expect( arrayLen( rsp.result.tools ) ).toBe( 5 );
+				expect( arrayLen( rsp.result.tools ) ).toBe( 4 );
 			});
 
 			it( "includes get_lucee_function", function() {
@@ -98,12 +98,6 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
 				var names = rsp.result.tools.map( function(t){ return t.name; } );
 				expect( arrayFind( names, "get_lucee_tag" ) > 0 ).toBeTrue();
-			});
-
-			it( "includes search_lucee_docs", function() {
-				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
-				var names = rsp.result.tools.map( function(t){ return t.name; } );
-				expect( arrayFind( names, "search_lucee_docs" ) > 0 ).toBeTrue();
 			});
 
 			it( "includes parse_cfml_ast", function() {
