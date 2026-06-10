@@ -4,13 +4,15 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server package
 
 ## How It Works
 
-The extension deploys an MCP endpoint into the Lucee server context, reachable at:
+The extension deploys an MCP endpoint into the Lucee server context. By default it is reachable at:
 
 ```
 POST /lucee/mcp/
 ```
 
-AI providers call this endpoint using the JSON-RPC 2.0 protocol. The server handles `initialize` (handshake), `tools/list` (tool discovery) and `tools/call` (tool execution). It is written entirely in CFML — no Java, no Maven dependencies, no external libraries of any kind.
+You can also map the extension context to a shorter URL via CFConfig (see [Custom URL mapping](#custom-url-mapping) below) — for example the webroot (`POST /`) or `POST /mcp/`.
+
+AI providers call the endpoint using the JSON-RPC 2.0 protocol. The server handles `initialize` (handshake), `tools/list` (tool discovery) and `tools/call` (tool execution). It is written entirely in CFML — no Java, no Maven dependencies, no external libraries of any kind.
 
 Beyond its use as a Lucee documentation tool, this extension is designed to serve as a starting point for building your own MCP server in CFML. The core protocol handling (`MCPSupport.cfc`) is cleanly separated from the tool implementations (`MCPServer.cfc`), so you can add your own tools — database queries, API integrations, business logic — by following the same pattern.
 
@@ -84,6 +86,32 @@ Install via the Lucee Administrator or by dropping the `.lex` file into the depl
 ```
 
 After installation the endpoint is immediately available at `/lucee/mcp/`.
+
+### Custom URL mapping
+
+The extension installs its entry point at `{lucee-config}/context/mcp/` (`index.cfm`). The default public URL is `/lucee/mcp/`, but you can add a server mapping in `.CFConfig.json` so MCP clients use a path that fits your app — for example the webroot or `/mcp`:
+
+**Webroot** — MCP at `POST /` (used in the [Lucee Docker MCP example](https://github.com/lucee/lucee-docs/tree/lucee/examples/docker/mcp)):
+
+```json
+"mappings": {
+    "/": {
+        "physical": "{lucee-config}/context/mcp/"
+    }
+}
+```
+
+**Dedicated path** — MCP at `POST /mcp/`:
+
+```json
+"mappings": {
+    "/mcp": {
+        "physical": "{lucee-config}/context/mcp/"
+    }
+}
+```
+
+Point your MCP client at the mapped URL (e.g. `https://your-host/` or `https://your-host/mcp/`). `/lucee/mcp/` remains available unless you replace the webroot mapping.
 
 ## Connecting to Claude
 
