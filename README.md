@@ -1,6 +1,6 @@
 # Lucee MCP Server Extension
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server packaged as a Lucee extension. Once installed, it exposes Lucee's built-in functions and tags as tools that AI models (Claude, etc.) can query directly for accurate, up-to-date documentation.
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server packaged as a Lucee extension. Once installed, it exposes Lucee documentation and CFML analysis as MCP tools that AI models (Claude, etc.) can call directly — function and tag descriptors, Lucene full-text search over the docs, and CFML AST parsing and querying (Lucee 7).
 
 ## How It Works
 
@@ -18,8 +18,24 @@ Beyond its use as a Lucee documentation tool, this extension is designed to serv
 
 | Tool | Description |
 |---|---|
-| `get_lucee_function` | Returns the full descriptor for a named Lucee built-in function — arguments, types, defaults, and docs URL |
-| `get_lucee_tag` | Returns the full descriptor for a named Lucee tag — attributes, types, defaults, and docs URL |
+| `get_lucee_function` | Full descriptor for a named Lucee built-in function — arguments, types, defaults, and docs URL |
+| `get_lucee_tag` | Full descriptor for a named Lucee tag — attributes, types, defaults, and docs URL |
+| `search_lucee_docs` | Full-text search across functions, tags, and recipes. **Requires the Lucene 3 extension**; returns a graceful message if Lucene is not installed |
+| `parse_cfml_ast` | Parse CFML source or a file path into an AST JSON tree or compact summary. **Requires Lucee 7.0.0.296+** (`astFromString` / `astFromPath`) |
+| `query_cfml_ast` | Find AST nodes by type, name, line, or built-in status in parsed CFML. **Requires Lucee 7.0.0.296+** |
+
+### AST tools
+
+`parse_cfml_ast` and `query_cfml_ast` use Lucee 7's built-in AST functions. Pass either `source` (inline CFML) or `path` (`.cfm` / `.cfc` / `.cfml` file). Optional `mode` is `tag` (default) or `script`.
+
+- `parse_cfml_ast` — full tree JSON, or set `summary: true` for a compact overview; optional `maxDepth` limits nesting
+- `query_cfml_ast` — filter with `nodeType` (e.g. `CallExpression`, `CFMLTag`), `name`, `line`, or `builtInOnly: true`
+
+Typical workflow: parse with `parse_cfml_ast` (often with `summary: true`), then drill down with `query_cfml_ast`.
+
+### Documentation search
+
+`search_lucee_docs` indexes Lucee documentation via the Lucene 3 extension (`EFDEB172-F52E-4D84-9CD1A1F561B3DFC8`). Install Lucene on the same Lucee instance, or the tool still appears in `tools/list` but responds with *"Search is not available: Lucene 3 extension is not installed."*
 
 ### Adding Your Own Tools
 
@@ -141,30 +157,18 @@ Handshake sent by MCP clients on first connect.
 { "jsonrpc": "2.0", "id": 2, "method": "tools/list" }
 ```
 
-**Response:**
+**Response:** (five tools — names only shown here; each includes `description` and `inputSchema`)
+
 ```json
 {
   "jsonrpc": "2.0", "id": 2,
   "result": {
     "tools": [
-      {
-        "name": "get_lucee_function",
-        "description": "Get the complete descriptor for a specific Lucee built-in function.",
-        "inputSchema": {
-          "type": "object",
-          "properties": { "name": { "type": "string" } },
-          "required": [ "name" ]
-        }
-      },
-      {
-        "name": "get_lucee_tag",
-        "description": "Get the complete descriptor for a specific Lucee tag.",
-        "inputSchema": {
-          "type": "object",
-          "properties": { "name": { "type": "string" } },
-          "required": [ "name" ]
-        }
-      }
+      { "name": "get_lucee_function", "description": "...", "inputSchema": { ... } },
+      { "name": "get_lucee_tag", "description": "...", "inputSchema": { ... } },
+      { "name": "search_lucee_docs", "description": "...", "inputSchema": { ... } },
+      { "name": "parse_cfml_ast", "description": "...", "inputSchema": { ... } },
+      { "name": "query_cfml_ast", "description": "...", "inputSchema": { ... } }
     ]
   }
 }
@@ -226,6 +230,40 @@ The `cf` prefix is stripped automatically — `cfquery` and `query` both resolve
 }
 ```
 
+### tools/call — parse_cfml_ast
+
+**Request:**
+```json
+{
+  "jsonrpc": "2.0", "id": 5, "method": "tools/call",
+  "params": {
+    "name": "parse_cfml_ast",
+    "arguments": { "source": "<cfset x = arraySort(myArr)>", "summary": true }
+  }
+}
+```
+
+**Response:** JSON text in `content[0].text` — a compact AST summary or full tree depending on `summary` / `maxDepth`.
+
+### tools/call — query_cfml_ast
+
+**Request:**
+```json
+{
+  "jsonrpc": "2.0", "id": 6, "method": "tools/call",
+  "params": {
+    "name": "query_cfml_ast",
+    "arguments": {
+      "source": "<cfset x = arraySort(myArr)>",
+      "nodeType": "CallExpression",
+      "name": "arraySort"
+    }
+  }
+}
+```
+
+**Response:** JSON array of matching AST nodes in `content[0].text`.
+
 ## Error Codes
 
 The server uses standard JSON-RPC 2.0 error codes:
@@ -245,14 +283,18 @@ source/
   components/org/lucee/extension/mcp/
     MCPServer.cfc      ← JSON-RPC dispatch, loads tools dynamically
     MCPSupport.cfc     ← request reading, response writing, error formatting
-    Tool.cfc           ← abstract base class for all tools
+    AstSupport.cfc     ← shared AST parse, summarize, and query helpers
     tools/
-      GetLuceeFunction.cfc   ← get_lucee_function tool
-      GetLuceeTag.cfc        ← get_lucee_tag tool
+      Tool.cfc           ← abstract base class for all tools
+      Functions.cfc      ← get_lucee_function
+      Tags.cfc           ← get_lucee_tag
+      SearchLuceeDocs.cfc  ← search_lucee_docs (Lucene)
+      ParseCfmlAst.cfc   ← parse_cfml_ast
+      QueryCfmlAst.cfc   ← query_cfml_ast
       (add your own here)
   context/
-    lucee/mcp/
-      index.cfm        ← entry point, accessible at /lucee/mcp/
+    mcp/
+      index.cfm        ← entry point (default URL: /lucee/mcp/)
       Application.cfc  ← sets component paths
   images/
     logo.png
