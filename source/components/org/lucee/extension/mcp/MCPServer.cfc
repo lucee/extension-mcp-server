@@ -50,11 +50,10 @@ component extends="MCPSupport" {
 	// -------------------------------------------------------------------------
 	public function handle() {
 		var req = readRequest();
-		var requestId = structKeyExists( req, "id" ) ? req.id : nullValue();
+		var requestId = getRpcRequestId( req );
 
-		// JSON-RPC requires id + method
 		if ( !structKeyExists( req, "method" ) ) {
-			writeError( id: requestId, code: -32600, message: "Invalid Request: missing method" );
+			writeError( requestId, -32600, "Invalid Request: missing method" );
 			return;
 		}
 
@@ -72,11 +71,10 @@ component extends="MCPSupport" {
 				handleToolsCall( requestId, params );
 			}
 			else {
-				writeError( id: requestId, code: -32601, message: "Method not found: #method#" );
+				writeError( requestId, -32601, "Method not found: #method#" );
 			}
 		}
 		catch ( any ex ) {
-			// positional args — avoids Lucee named-arg clash when param name equals a local var (id: id)
 			writeError( requestId, -32603, "Internal error: #ex.message#" );
 		}
 	}
@@ -85,7 +83,7 @@ component extends="MCPSupport" {
 	// initialize - handshake, MCP clients send this on first connect
 	// -------------------------------------------------------------------------
 	private function handleInitialize( id, params ) {
-		writeResult( id: arguments.id, result: [
+		writeResult( arguments.id, [
 			"protocolVersion": static.PROTOCOL_VERSION,
 			"serverInfo"     : [
 				"name"   : static.SERVER_NAME,
@@ -101,7 +99,7 @@ component extends="MCPSupport" {
 	// tools/list - return tool catalog
 	// -------------------------------------------------------------------------
 	public function handleToolsList( id ) {
-		writeResult( id: arguments.id, result: {
+		writeResult( arguments.id, {
 			"tools": variables.toolsIndex
 		} );
 	}
@@ -111,7 +109,7 @@ component extends="MCPSupport" {
 	// -------------------------------------------------------------------------
 	private function handleToolsCall( id, params ) {
 		if ( !structKeyExists( params, "name" ) ) {
-			writeError( id: arguments.id, code: -32602, message: "Invalid params: missing tool name" );
+			writeError( arguments.id, -32602, "Invalid params: missing tool name" );
 			return;
 		}
 
@@ -120,10 +118,10 @@ component extends="MCPSupport" {
 
 		var tool=variables.tools[toolName]?:nullValue();
 		if(isNull(tool)) {
-			writeError( id: arguments.id, code: -32602, message: "Unknown tool: #toolName#" );
+			writeError( arguments.id, -32602, "Unknown tool: #toolName#" );
 		}
 		else {
-			writeResult( id: arguments.id, result: tool.exec( args ) );
+			writeResult( arguments.id, tool.exec( args ) );
 		}
 	}
 }

@@ -13,20 +13,12 @@ abstract component {
 		var data = getHTTPRequestData();
 
 		if ( data.method != "POST" ) {
-			writeError(
-				id      : nullValue(),
-				code    : -32600,
-				message : "Invalid Request: only POST is supported"
-			);
+			writeError( "", -32600, "Invalid Request: only POST is supported" );
 			abort;
 		}
 
 		if ( !structKeyExists( data, "content" ) || isEmpty( trim( data.content ) ) ) {
-			writeError(
-				id      : nullValue(),
-				code    : -32700,
-				message : "Parse error: empty request body"
-			);
+			writeError( "", -32700, "Parse error: empty request body" );
 			abort;
 		}
 
@@ -34,13 +26,17 @@ abstract component {
 			return deserializeJSON( data.content );
 		}
 		catch ( any ex ) {
-			writeError(
-				id      : nullValue(),
-				code    : -32700,
-				message : "Parse error: #ex.message#"
-			);
+			writeError( "", -32700, "Parse error: #ex.message#" );
 			abort;
 		}
+	}
+
+	/**
+	 * JSON-RPC id from a parsed request. Use "" when omitted — never nullValue() in a local var
+	 * (in Lucee null and not-existing are the same; nullValue() locals are unreadable).
+	 */
+	package static function getRpcRequestId( required struct req ) {
+		return structKeyExists( arguments.req, "id" ) ? arguments.req.id : "";
 	}
 
 	/**
@@ -51,7 +47,7 @@ abstract component {
 		content type="application/json;charset=UTF-8";
 		echo( serializeJSON( {
 			"jsonrpc" : "2.0",
-			"id"      : arguments.id,
+			"id"      : arguments.id ?: "",
 			"result"  : arguments.result
 		} ) );
 	}
@@ -66,7 +62,7 @@ abstract component {
 		content type="application/json;charset=UTF-8";
 		echo( serializeJSON( {
 			"jsonrpc" : "2.0",
-			"id"      : arguments.id,
+			"id"      : arguments.id ?: "",
 			"error"   : {
 				"code"    : arguments.code,
 				"message" : arguments.message
