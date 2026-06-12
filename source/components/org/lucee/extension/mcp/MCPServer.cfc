@@ -50,33 +50,34 @@ component extends="MCPSupport" {
 	// -------------------------------------------------------------------------
 	public function handle() {
 		var req = readRequest();
+		var requestId = structKeyExists( req, "id" ) ? req.id : nullValue();
 
 		// JSON-RPC requires id + method
 		if ( !structKeyExists( req, "method" ) ) {
-			writeError( id: req.id ?: nullValue(), code: -32600, message: "Invalid Request: missing method" );
+			writeError( id: requestId, code: -32600, message: "Invalid Request: missing method" );
 			return;
 		}
 
-		var id     = req.id     ?: nullValue();
 		var method = req.method ?: "";
 		var params = req.params ?: {};
 
 		try {
 			if ( method == "initialize" ) {
-				handleInitialize( id, params );
+				handleInitialize( requestId, params );
 			}
 			else if ( method == "tools/list" ) {
-				handleToolsList( id );
+				handleToolsList( requestId );
 			}
 			else if ( method == "tools/call" ) {
-				handleToolsCall( id, params );
+				handleToolsCall( requestId, params );
 			}
 			else {
-				writeError( id: id, code: -32601, message: "Method not found: #method#" );
+				writeError( id: requestId, code: -32601, message: "Method not found: #method#" );
 			}
 		}
 		catch ( any ex ) {
-			writeError( id: id, code: -32603, message: "Internal error: #ex.message#" );
+			// positional args — avoids Lucee named-arg clash when param name equals a local var (id: id)
+			writeError( requestId, -32603, "Internal error: #ex.message#" );
 		}
 	}
 
