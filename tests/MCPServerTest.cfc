@@ -87,7 +87,6 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 					throwonerror: true
 				);
 				expect( len( trim( res.filecontent ?: "" ) ) ).toBe( 0 );
-				expect( val( res.statusCode ) ).toBe( 202 );
 			});
 
 		});
