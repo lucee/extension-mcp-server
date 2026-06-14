@@ -45,8 +45,8 @@ abstract component {
 
 	package static function writeNotificationAck() {
 		setting show = false;
-		cfheader( statusCode = 202 );
-		cfabort();
+		getPageContext().getResponse().setStatus( 202 );
+		abort;
 	}
 
 	/**

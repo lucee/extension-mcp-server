@@ -86,7 +86,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 					body     : serializeJSON({ "jsonrpc": "2.0", "method": "notifications/initialized" }),
 					throwonerror: true
 				);
-				expect( res.statusCode ).toBe( 202 );
+				expect( val( res.statusCode ) ).toBe( 202 );
 				expect( len( trim( res.filecontent ?: "" ) ) ).toBe( 0 );
 			});
 
