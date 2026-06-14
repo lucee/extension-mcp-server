@@ -39,6 +39,16 @@ abstract component {
 		return structKeyExists( arguments.req, "id" ) ? arguments.req.id : "";
 	}
 
+	package static function isNotification( required struct req ) {
+		return !structKeyExists( arguments.req, "id" );
+	}
+
+	package static function writeNotificationAck() {
+		setting show = false;
+		cfheader( statusCode = 202 );
+		cfabort();
+	}
+
 	/**
 	 * Write a successful JSON-RPC response.
 	 */

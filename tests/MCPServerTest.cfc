@@ -76,6 +76,23 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 		});
 
 		// -------------------------------------------------------------------------
+		describe( "notifications/initialized", function() {
+
+			it( "returns HTTP 202 with empty body", function() {
+				var res = internalRequest(
+					template : "/lucee/mcp/index.cfm",
+					method   : "POST",
+					headers  : { "Content-Type": "application/json" },
+					body     : serializeJSON({ "jsonrpc": "2.0", "method": "notifications/initialized" }),
+					throwonerror: true
+				);
+				expect( res.statusCode ).toBe( 202 );
+				expect( len( trim( res.filecontent ?: "" ) ) ).toBe( 0 );
+			});
+
+		});
+
+		// -------------------------------------------------------------------------
 		describe( "tools/list", function() {
 
 			it( "returns a tools array", function() {

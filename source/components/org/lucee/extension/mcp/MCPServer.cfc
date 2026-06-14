@@ -53,12 +53,19 @@ component extends="MCPSupport" {
 		var requestId = getRpcRequestId( req );
 
 		if ( !structKeyExists( req, "method" ) ) {
+			if ( isNotification( req ) ) {
+				writeNotificationAck();
+			}
 			writeError( requestId, -32600, "Invalid Request: missing method" );
 			return;
 		}
 
 		var method = req.method ?: "";
 		var params = req.params ?: {};
+
+		if ( isNotification( req ) ) {
+			writeNotificationAck();
+		}
 
 		try {
 			if ( method == "initialize" ) {
@@ -71,11 +78,11 @@ component extends="MCPSupport" {
 				handleToolsCall( requestId, params );
 			}
 			else {
-				writeError( requestId, -32601, "Method not found: #method#" );
+				writeError( requestId, -32601, "Method not found: " & method );
 			}
 		}
 		catch ( any ex ) {
-			writeError( requestId, -32603, "Internal error: #ex.message#" );
+			writeError( requestId, -32603, "Internal error: " & ex.message );
 		}
 	}
 
