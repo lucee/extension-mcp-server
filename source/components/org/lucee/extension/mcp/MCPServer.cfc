@@ -54,7 +54,7 @@ component extends="MCPSupport" {
 
 		if ( !structKeyExists( req, "method" ) ) {
 			if ( isNotification( req ) ) {
-				writeNotificationAck();
+				ackNotification();
 			}
 			writeError( requestId, -32600, "Invalid Request: missing method" );
 			return;
@@ -64,7 +64,7 @@ component extends="MCPSupport" {
 		var params = req.params ?: {};
 
 		if ( isNotification( req ) ) {
-			writeNotificationAck();
+			ackNotification();
 		}
 
 		try {
@@ -84,6 +84,12 @@ component extends="MCPSupport" {
 		catch ( any ex ) {
 			writeError( requestId, -32603, "Internal error: " & ex.message );
 		}
+	}
+
+	private function ackNotification() {
+		setting show = false;
+		getPageContext().getResponse().setStatus( 202 );
+		abort;
 	}
 
 	// -------------------------------------------------------------------------

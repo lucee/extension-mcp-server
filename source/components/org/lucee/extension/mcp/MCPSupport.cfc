@@ -43,12 +43,6 @@ abstract component {
 		return !structKeyExists( arguments.req, "id" );
 	}
 
-	package static function writeNotificationAck() {
-		setting show = false;
-		getPageContext().getResponse().setStatus( 202 );
-		abort;
-	}
-
 	/**
 	 * Write a successful JSON-RPC response.
 	 */
