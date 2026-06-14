@@ -40,7 +40,10 @@ abstract component {
 	}
 
 	package static function isNotification( required struct req ) {
-		return !structKeyExists( arguments.req, "id" );
+		if ( !structKeyExists( arguments.req, "id" ) ) {
+			return true;
+		}
+		return isNull( arguments.req.id );
 	}
 
 	/**

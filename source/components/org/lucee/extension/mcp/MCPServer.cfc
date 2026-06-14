@@ -88,7 +88,7 @@ component extends="MCPSupport" {
 
 	private function ackNotification() {
 		setting show = false;
-		getPageContext().getResponse().setStatus( 202 );
+		cfheader( statusCode = 202 );
 		abort;
 	}
 
