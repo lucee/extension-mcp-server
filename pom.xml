@@ -5,7 +5,7 @@
 
     <groupId>org.lucee</groupId>
     <artifactId>mcp-server-extension</artifactId>
-    <version>1.0.1.4-SNAPSHOT</version>
+    <version>1.0.1.5-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>MCP Server Extension</name>
     <description>A Model Context Protocol (MCP) server for Lucee, written entirely in CFML with no external dependencies. Exposes Lucee built-in functions and tags as tools for AI models such as Claude. Can also serve as a starting point for building custom MCP servers in CFML.</description>
@@ -13,7 +13,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <id>B5059590-2112-49FB-AEDFB997252EDA18</id>
+        <image>https://raw.githubusercontent.com/lucee/extension-mcp-server/master/source/images/logo.png</image>
+        <buildDate>${maven.build.timestamp}</buildDate>
         <label>MCP Server</label>
         <luceeCoreVersion>7.0.0.110</luceeCoreVersion>
         <manifest.description>MCP server for Lucee written in CFML: exposes built-in functions and tags as AI tools. Use as-is or as a starting point for custom MCP servers.</manifest.description>
@@ -62,7 +65,7 @@
             </activation>
             <build>
                 <plugins>
-                    <plugin>
+<plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
                         <version>3.0.1</version>
@@ -100,6 +103,32 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <configuration>
+                    <flattenMode>bom</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.8</version>
