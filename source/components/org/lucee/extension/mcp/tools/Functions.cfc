@@ -23,10 +23,17 @@ component extends="Tool" accessors=true {
 			cfthrow( message: "name is required" );
 		}
 		var name = trim( args.name );
+		var cacheKey = lCase( name );
 
+		var cached = getCached( cacheKey );
+		if ( !isNull( cached ) ) {
+			return cached;
+		}
 
 		if ( !structKeyExists(getFunctionList(), name ) ) {
-			return toTextContent( "Function '#name#' not found. " );
+			var missing = toTextContent( "Function '#name#' not found. " );
+			putCached( cacheKey, missing );
+			return missing;
 		}
 
 		var data = getFunctionData( name );
@@ -40,7 +47,9 @@ component extends="Tool" accessors=true {
 		         & chr(10)
 		         & "```";
 
-		return toTextContent( text );
+		var result = toTextContent( text );
+		putCached( cacheKey, result );
+		return result;
 	}
 
 }

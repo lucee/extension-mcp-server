@@ -66,7 +66,20 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
                 expect( structKeyExists(result.content[1],"type") ).toBeTrue(  );
                 expect( result.content[1].type ).toBe( "text" );
                 
-            }); 
+            });
+
+            it("caches results by normalised name, including the cf prefix", function() {
+                var t = new org.lucee.extension.mcp.tools.Tags();
+                expect( t.getCacheSize() ).toBe( 0 );
+                expect( t.getCacheHitCount() ).toBe( 0 );
+                var first = t.exec({ name: "query" });
+                expect( t.getCacheSize() ).toBe( 1 );
+                expect( t.getCacheHitCount() ).toBe( 0 );
+                var second = t.exec({ name: "  CFQUERY " });
+                expect( t.getCacheSize() ).toBe( 1 );
+                expect( t.getCacheHitCount() ).toBe( 1 );
+                expect( second.content[1].text ).toBe( first.content[1].text );
+            });
         });
     }
 }

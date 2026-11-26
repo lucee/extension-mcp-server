@@ -26,6 +26,12 @@ component extends="Tool" {
 		// strip leading cf prefix if supplied
 		if ( left( name, 2 ) == "cf" ) name = mid( name, 3 );
 
+		var cacheKey = name;
+		var cached = getCached( cacheKey );
+		if ( !isNull( cached ) ) {
+			return cached;
+		}
+
 		var tagList = getTagList();
 		var matchPrefix = "";
 		var matchName   = "";
@@ -43,7 +49,9 @@ component extends="Tool" {
 		}
 
 		if ( isEmpty( matchName ) ) {
-			return toTextContent( "Tag '#name#' not found. " );
+			var missing = toTextContent( "Tag '#name#' not found. " );
+			putCached( cacheKey, missing );
+			return missing;
 		}
 
 		var data = getTagData( matchPrefix, matchName );
@@ -57,6 +65,8 @@ component extends="Tool" {
 		         & chr(10)
 		         & "```";
 
-		return toTextContent( text );
+		var result = toTextContent( text );
+		putCached( cacheKey, result );
+		return result;
 	}
 }
