@@ -66,7 +66,35 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
                 expect( structKeyExists(result.content[1],"type") ).toBeTrue(  );
                 expect( result.content[1].type ).toBe( "text" );
                 
-            }); 
+            });
+
+            it("caches results by normalised name", function() {
+                var t = new org.lucee.extension.mcp.tools.Functions();
+                expect( t.getCacheSize() ).toBe( 0 );
+                expect( t.getCacheHitCount() ).toBe( 0 );
+                var first = t.exec({ name: "arraySort" });
+                expect( t.getCacheSize() ).toBe( 1 );
+                expect( t.getCacheHitCount() ).toBe( 0 );
+                var second = t.exec({ name: "  ARRAYSORT " });
+                expect( t.getCacheSize() ).toBe( 1 );
+                expect( t.getCacheHitCount() ).toBe( 1 );
+                expect( second.content[1].text ).toBe( first.content[1].text );
+            });
+
+            it("evicts the least recently used entry when the cache is full", function() {
+                var t = new org.lucee.extension.mcp.tools.Functions();
+                t.setCacheMax( 2 );
+                t.exec({ name: "arraySort" });
+                t.exec({ name: "arrayLen" });
+                t.exec({ name: "arraySort" }); // hit, arraySort is MRU, arrayLen is LRU
+                t.exec({ name: "listToArray" }); // evicts arrayLen
+                expect( t.getCacheSize() ).toBe( 2 );
+                var hits = t.getCacheHitCount();
+                t.exec({ name: "arraySort" });
+                expect( t.getCacheHitCount() ).toBe( hits + 1 );
+                t.exec({ name: "arrayLen" });
+                expect( t.getCacheHitCount() ).toBe( hits + 1 );
+            });
         });
     }
 }

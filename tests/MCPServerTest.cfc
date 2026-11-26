@@ -99,9 +99,9 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 				expect( isArray( rsp.result.tools ) ).toBeTrue();
 			});
 
-			it( "returns exactly 5 tools", function() {
+			it( "returns exactly 2 tools by default", function() {
 				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
-				expect( arrayLen( rsp.result.tools ) ).toBe( 5 );
+				expect( arrayLen( rsp.result.tools ) ).toBe( 2 );
 			});
 
 			it( "includes get_lucee_function", function() {
@@ -114,6 +114,78 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
 				var names = rsp.result.tools.map( function(t){ return t.name; } );
 				expect( arrayFind( names, "get_lucee_tag" ) > 0 ).toBeTrue();
+			});
+
+			it( "omits search_lucee_docs by default", function() {
+				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
+				var names = rsp.result.tools.map( function(t){ return t.name; } );
+				expect( arrayFind( names, "search_lucee_docs" ) ).toBe( 0 );
+			});
+
+			it( "omits parse_cfml_ast by default", function() {
+				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
+				var names = rsp.result.tools.map( function(t){ return t.name; } );
+				expect( arrayFind( names, "parse_cfml_ast" ) ).toBe( 0 );
+			});
+
+			it( "omits query_cfml_ast by default", function() {
+				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
+				var names = rsp.result.tools.map( function(t){ return t.name; } );
+				expect( arrayFind( names, "query_cfml_ast" ) ).toBe( 0 );
+			});
+
+			it( "each tool has an inputSchema", function() {
+				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
+				for ( var tool in rsp.result.tools ) {
+					expect( structKeyExists( tool, "inputSchema" ) ).toBeTrue();
+				}
+			});
+
+		});
+
+		// -------------------------------------------------------------------------
+		describe( "disabled extra tools", function() {
+
+			it( "tools/call of search_lucee_docs returns -32602 disabled", function() {
+				var rsp = post({ "jsonrpc":"2.0", "id":20, "method":"tools/call",
+					"params": { "name":"search_lucee_docs", "arguments":{ "query":"file" } } });
+				expect( structKeyExists( rsp, "error" ) ).toBeTrue();
+				expect( rsp.error.code ).toBe( -32602 );
+				expect( findNoCase( "disabled", rsp.error.message ) > 0 ).toBeTrue();
+			});
+
+			it( "tools/call of parse_cfml_ast returns -32602 disabled", function() {
+				var rsp = post({ "jsonrpc":"2.0", "id":21, "method":"tools/call",
+					"params": { "name":"parse_cfml_ast", "arguments":{ "source":"<cfset x = 1>" } } });
+				expect( structKeyExists( rsp, "error" ) ).toBeTrue();
+				expect( rsp.error.code ).toBe( -32602 );
+				expect( findNoCase( "disabled", rsp.error.message ) > 0 ).toBeTrue();
+			});
+
+			it( "tools/call of query_cfml_ast returns -32602 disabled", function() {
+				var rsp = post({ "jsonrpc":"2.0", "id":22, "method":"tools/call",
+					"params": { "name":"query_cfml_ast", "arguments":{ "source":"<cfset x = 1>" } } });
+				expect( structKeyExists( rsp, "error" ) ).toBeTrue();
+				expect( rsp.error.code ).toBe( -32602 );
+				expect( findNoCase( "disabled", rsp.error.message ) > 0 ).toBeTrue();
+			});
+
+		});
+
+		// -------------------------------------------------------------------------
+		describe( "tools/list with extra tools enabled", function() {
+
+			beforeEach( function() {
+				createObject( "java", "java.lang.System" ).setProperty( "lucee.mcp.extra.tools", "true" );
+			});
+
+			afterEach( function() {
+				createObject( "java", "java.lang.System" ).clearProperty( "lucee.mcp.extra.tools" );
+			});
+
+			it( "returns exactly 5 tools", function() {
+				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
+				expect( arrayLen( rsp.result.tools ) ).toBe( 5 );
 			});
 
 			it( "includes search_lucee_docs", function() {
@@ -134,11 +206,10 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="mcpserver" {
 				expect( arrayFind( names, "query_cfml_ast" ) > 0 ).toBeTrue();
 			});
 
-			it( "each tool has an inputSchema", function() {
-				var rsp = post({ "jsonrpc":"2.0", "id":2, "method":"tools/list" });
-				for ( var tool in rsp.result.tools ) {
-					expect( structKeyExists( tool, "inputSchema" ) ).toBeTrue();
-				}
+			it( "tools/call of search_lucee_docs is not rejected as disabled", function() {
+				var rsp = post({ "jsonrpc":"2.0", "id":23, "method":"tools/call",
+					"params": { "name":"search_lucee_docs", "arguments":{ "query":"file" } } });
+				expect( structKeyExists( rsp, "error" ) && findNoCase( "disabled", rsp.error.message ?: "" ) > 0 ).toBeFalse();
 			});
 
 		});

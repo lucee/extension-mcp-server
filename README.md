@@ -18,13 +18,17 @@ Beyond its use as a Lucee documentation tool, this extension is designed to serv
 
 ## Tools
 
-| Tool | Description |
-|---|---|
-| `get_lucee_function` | Full descriptor for a named Lucee built-in function — arguments, types, defaults, and docs URL |
-| `get_lucee_tag` | Full descriptor for a named Lucee tag — attributes, types, defaults, and docs URL |
-| `search_lucee_docs` | Full-text search across functions, tags, and recipes. **Requires the Lucene 3 extension**; returns a graceful message if Lucene is not installed |
-| `parse_cfml_ast` | Parse CFML source (or a file path, if enabled) into an AST JSON tree or compact summary. **Requires Lucee 7.0.0.296+** (`astFromString` / `astFromPath`) |
-| `query_cfml_ast` | Find AST nodes by type, name, line, or built-in status in parsed CFML. **Requires Lucee 7.0.0.296+** |
+| Tool | Default | Description |
+|---|---|---|
+| `get_lucee_function` | enabled | Full descriptor for a named Lucee built-in function — arguments, types, defaults, and docs URL |
+| `get_lucee_tag` | enabled | Full descriptor for a named Lucee tag — attributes, types, defaults, and docs URL |
+| `search_lucee_docs` | disabled | Full-text search across functions, tags, and recipes. **Requires the Lucene 3 extension**; returns a graceful message if Lucene is not installed |
+| `parse_cfml_ast` | disabled | Parse CFML source (or a file path, if enabled) into an AST JSON tree or compact summary. **Requires Lucee 7.0.0.296+** (`astFromString` / `astFromPath`) |
+| `query_cfml_ast` | disabled | Find AST nodes by type, name, line, or built-in status in parsed CFML. **Requires Lucee 7.0.0.296+** |
+
+`get_lucee_function` and `get_lucee_tag` are always available. Their results are cached in memory, keyed by the normalised name (trimmed, case-insensitive; leading `cf` is stripped for tags), with a bound of 512 entries per tool and LRU eviction. A cache hit returns the stored descriptor and does not call `getFunctionData` or `getTagData` again.
+
+The other tools, and any custom tools you add, are disabled by default: they are omitted from `tools/list`, and `tools/call` returns a JSON-RPC error (`-32602`, "Tool '…' is disabled"). To enable them, set the system property `lucee.mcp.extra.tools` or the environment variable `LUCEE_MCP_EXTRA_TOOLS` to `true`. `initialize` is unchanged in either mode.
 
 ### AST tools
 
@@ -39,7 +43,7 @@ Typical workflow: parse with `parse_cfml_ast` (often with `summary: true`), then
 
 ### Documentation search
 
-`search_lucee_docs` indexes Lucee documentation via the Lucene 3 extension (`EFDEB172-F52E-4D84-9CD1A1F561B3DFC8`). Install Lucene on the same Lucee instance, or the tool still appears in `tools/list` but responds with *"Search is not available: Lucene 3 extension is not installed."*
+`search_lucee_docs` is disabled by default (see above). When extra tools are enabled, it indexes Lucee documentation via the Lucene 3 extension (`EFDEB172-F52E-4D84-9CD1A1F561B3DFC8`). Install Lucene on the same Lucee instance, or the tool still appears in `tools/list` but responds with *"Search is not available: Lucene 3 extension is not installed."*
 
 The index is stored on disk (`{lucee-config-dir}/doc/search`) and built on the first search. After that, the sources (functions, tags, and the recipe index) are only checked for changes once per cache TTL, and a source is only re-indexed (recipes only downloaded again) when it changed. When the TTL has expired, the check runs in the background and searches keep using the existing index. If the recipe source can't be reached, the recipes already indexed are kept and the check is retried after at most 5 minutes.
 
@@ -194,7 +198,7 @@ Handshake sent by MCP clients on first connect.
 { "jsonrpc": "2.0", "id": 2, "method": "tools/list" }
 ```
 
-**Response:** (five tools — names only shown here; each includes `description` and `inputSchema`)
+**Response:** (by default only the two always-on tools — names only shown here; each includes `description` and `inputSchema`. With `LUCEE_MCP_EXTRA_TOOLS=true` the list also includes `search_lucee_docs`, `parse_cfml_ast` and `query_cfml_ast`.)
 
 ```json
 {
@@ -202,10 +206,7 @@ Handshake sent by MCP clients on first connect.
   "result": {
     "tools": [
       { "name": "get_lucee_function", "description": "...", "inputSchema": { ... } },
-      { "name": "get_lucee_tag", "description": "...", "inputSchema": { ... } },
-      { "name": "search_lucee_docs", "description": "...", "inputSchema": { ... } },
-      { "name": "parse_cfml_ast", "description": "...", "inputSchema": { ... } },
-      { "name": "query_cfml_ast", "description": "...", "inputSchema": { ... } }
+      { "name": "get_lucee_tag", "description": "...", "inputSchema": { ... } }
     ]
   }
 }

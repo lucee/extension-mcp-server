@@ -9,6 +9,12 @@
  * Endpoint : POST /mcp/
  * Methods  : tools/list, tools/call
  *
+ * get_lucee_function and get_lucee_tag are always enabled. Other tools
+ * (search_lucee_docs, parse_cfml_ast, query_cfml_ast, and any custom tools)
+ * are disabled by default: omitted from tools/list, and tools/call returns
+ * a JSON-RPC error. Enable them with the system property "lucee.mcp.extra.tools"
+ * or the environment variable "LUCEE_MCP_EXTRA_TOOLS" set to true.
+ *
  */
 component extends="MCPSupport" {
 
@@ -112,8 +118,15 @@ component extends="MCPSupport" {
 	// tools/list - return tool catalog
 	// -------------------------------------------------------------------------
 	public function handleToolsList( id ) {
+		var list = variables.toolsIndex;
+		if ( !isExtraToolsEnabled() ) {
+			list = [];
+			loop array=variables.toolsIndex item="local.tool" {
+				if ( isCoreTool( tool.name ) ) arrayAppend( list, tool );
+			}
+		}
 		writeResult( arguments.id, {
-			"tools": variables.toolsIndex
+			"tools": list
 		} );
 	}
 
@@ -133,8 +146,32 @@ component extends="MCPSupport" {
 		if(isNull(tool)) {
 			writeError( arguments.id, -32602, "Unknown tool: #toolName#" );
 		}
+		else if ( !isExtraToolsEnabled() && !isCoreTool( toolName ) ) {
+			writeError( arguments.id, -32602, "Tool '#toolName#' is disabled" );
+		}
 		else {
 			writeResult( arguments.id, tool.exec( args ) );
 		}
+	}
+
+	/**
+	 * Tools that stay available even when extra tools are disabled.
+	 */
+	private boolean function isCoreTool( required string name ) {
+		return arguments.name == "get_lucee_function" || arguments.name == "get_lucee_tag";
+	}
+
+	/**
+	 * Extra tools (docs search, AST, and any custom tools) are disabled by default.
+	 * Enable them with the system property "lucee.mcp.extra.tools" or the
+	 * environment variable "LUCEE_MCP_EXTRA_TOOLS" set to true.
+	 */
+	private boolean function isExtraToolsEnabled() {
+		var sys = createObject( "java", "java.lang.System" );
+		var raw = sys.getProperty( "lucee.mcp.extra.tools" )
+		       ?: sys.getenv( "LUCEE_MCP_EXTRA_TOOLS" )
+		       ?: "";
+		raw = trim( raw );
+		return isBoolean( raw ) && raw;
 	}
 }
